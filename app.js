@@ -20,7 +20,11 @@ const INSTANCES = [
   'https://pipedapi.orangenet.cc',
 ];
 
-const FFMPEG_JS = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+/* ffmpeg.wasm is vendored same-origin (vendor/ffmpeg/) so its Web Worker is
+   same-origin too — a cross-origin Worker from a CDN is blocked by the browser.
+   The heavy core (.js/.wasm) still loads from the jsDelivr CDN via importScripts,
+   which is CORS-enabled. */
+const FFMPEG_JS = '/vendor/ffmpeg/index.js';
 const FFMPEG_CORE_JS = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js';
 const FFMPEG_CORE_WASM = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.wasm';
 
