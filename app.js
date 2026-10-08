@@ -227,16 +227,23 @@ function triggerDownload(blob, filename) {
 /* ---------- MP3 flow ---------- */
 async function downloadMP3() {
   const info = state.info;
-  const audio = pickAudioStream(info);
-  if (!audio) throw new Error('No audio stream found for this video.');
-  if (info.duration > 3600) throw new Error('Video is longer than 60 minutes — too heavy for in-browser conversion.');
-
   const bitrate = qualitySelect.value || '192';
   const name = sanitizeFilename(info.title);
+  if (info.duration > 3600) throw new Error('Video is longer than 60 minutes — too heavy for in-browser conversion.');
+
+  // Prefer a dedicated audio stream; fall back to ripping audio out of the best
+  // muxed mp4 (some Piped instances return no audio-only streams).
+  const audio = pickAudioStream(info);
+  const muxed = !audio
+    ? (info.videoStreams || []).filter(s => s.url && !s.videoOnly)
+        .sort((a, b) => qualityRank(b.quality) - qualityRank(a.quality))[0]
+    : null;
+  const src = audio || muxed;
+  if (!src) throw new Error('No audio stream found for this video. Try the MP4 tab instead.');
 
   let bytes;
   try {
-    bytes = await fetchBytes(audio.url, 'Fetching audio');
+    bytes = await fetchBytes(src.url, audio ? 'Fetching audio' : 'Fetching video (audio fallback)');
   } catch (e) {
     // CORS-blocked fetch: fall back to a plain navigation download of the raw audio file
     setProgress(100, 'Starting direct download…');
